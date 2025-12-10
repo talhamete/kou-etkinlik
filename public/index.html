@@ -4,160 +4,157 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>KOÜ Etkinlik Kayıt Sistemi</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="style.css" />
   </head>
-  <body class="bg-slate-100 min-h-screen">
-    <div
-      class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-lg"
-    >
-      <div
-        class="max-w-4xl mx-auto px-4 py-6 flex justify-between items-center"
-      >
-        <div>
-          <h1 class="text-3xl font-bold">Kocaeli Üniversitesi</h1>
-          <p class="text-blue-200 mt-1 text-sm">
-            Kampüs Etkinlik Kayıt Sistemi
-          </p>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <div class="header-content">
+          <div>
+            <h1>Kocaeli Üniversitesi</h1>
+            <p class="subtitle">Kampüs Etkinlik Kayıt Sistemi</p>
+          </div>
+          <div class="header-icon">📅</div>
         </div>
-        <i class="fa-solid fa-calendar-days text-4xl opacity-80"></i>
       </div>
-    </div>
+    </header>
 
-    <div class="max-w-4xl mx-auto px-4 py-8">
-      <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">
-        Aktif Etkinlikler
-      </h2>
+    <!-- Navigation -->
+    <nav class="nav">
+      <div class="container">
+        <button class="nav-btn active" onclick="showTab('events')">
+          Etkinlikler
+        </button>
+        <button class="nav-btn" onclick="showTab('myRegistrations')">
+          Kayıtlarım
+        </button>
+        <button class="nav-btn" onclick="showTab('addEvent')">
+          Etkinlik Ekle
+        </button>
+      </div>
+    </nav>
 
-      <div class="grid gap-6">
-        <div
-          class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow border-l-4 border-blue-500"
-        >
-          <div class="p-6">
-            <div class="flex justify-between items-start mb-2">
-              <h3 class="text-xl font-bold text-gray-800">
-                Yapay Zeka ve Makine Öğrenmesi Semineri
-              </h3>
-              <span
-                class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded"
-                >Akademik</span
-              >
-            </div>
-            <p class="text-gray-600 text-sm mb-4">
-              Endüstri profesyonelleri ile yapay zeka teknolojileri üzerine
-              seminer.
-            </p>
-
-            <div class="grid grid-cols-2 gap-2 text-sm text-gray-700 mb-4">
-              <div>
-                <i class="fa-regular fa-calendar text-blue-600 mr-2"></i>
-                15.12.2024
-              </div>
-              <div>
-                <i class="fa-regular fa-clock text-blue-600 mr-2"></i> 14:00
-              </div>
-              <div class="col-span-2">
-                <i class="fa-solid fa-location-dot text-blue-600 mr-2"></i> Müh.
-                Fak. Konferans Salonu
-              </div>
-            </div>
-
-            <div class="bg-gray-50 p-4 rounded-lg mt-4 border border-gray-200">
-              <h4 class="font-bold text-gray-700 mb-3 text-sm">
-                <i class="fa-solid fa-user-plus mr-2"></i>Hemen Kayıt Ol
-              </h4>
-
-              <form action="/kayit-ol" method="POST" class="space-y-3">
-                <input
-                  type="hidden"
-                  name="etkinlikAdi"
-                  value="Yapay Zeka Semineri"
-                />
-
-                <input
-                  type="text"
-                  name="adsoyad"
-                  placeholder="Ad Soyad"
-                  required
-                  class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-
-                <div class="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    name="ogrenciNo"
-                    placeholder="Öğrenci No"
-                    required
-                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-
-                  <select
-                    name="bolum"
-                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Yazılım Müh">Yazılım Müh.</option>
-                    <option value="Bilgisayar Müh">Bilgisayar Müh.</option>
-                    <option value="Elektrik Müh">Elektrik Müh.</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  Kaydı Tamamla
-                </button>
-              </form>
-            </div>
+    <!-- Main Content -->
+    <main class="container main-content">
+      <!-- Etkinlikler Tab -->
+      <div id="eventsTab" class="tab-content active">
+        <div class="section-header">
+          <h2>Yaklaşan Etkinlikler</h2>
+          <div class="filter-group">
+            <select id="categoryFilter" onchange="filterEvents()">
+              <option value="all">Tüm Kategoriler</option>
+              <option value="akademik">Akademik</option>
+              <option value="sosyal">Sosyal</option>
+              <option value="kariyer">Kariyer</option>
+              <option value="spor">Spor</option>
+            </select>
           </div>
         </div>
+        <div id="eventsContainer" class="events-grid"></div>
+      </div>
 
-        <div
-          class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow border-l-4 border-purple-500"
-        >
-          <div class="p-6">
-            <div class="flex justify-between items-start mb-2">
-              <h3 class="text-xl font-bold text-gray-800">
-                Bahar Şenliği Konseri
-              </h3>
-              <span
-                class="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded"
-                >Sosyal</span
-              >
+      <!-- Kayıtlarım Tab -->
+      <div id="myRegistrationsTab" class="tab-content">
+        <h2>Kayıtlarım</h2>
+        <div class="student-lookup">
+          <input
+            type="text"
+            id="studentNumberLookup"
+            placeholder="Öğrenci Numaranızı Girin"
+          />
+          <button onclick="loadMyRegistrations()">Kayıtlarımı Getir</button>
+        </div>
+        <div id="myRegistrationsContainer"></div>
+      </div>
+
+      <!-- Etkinlik Ekle Tab -->
+      <div id="addEventTab" class="tab-content">
+        <h2>Yeni Etkinlik Ekle</h2>
+        <form id="addEventForm" class="event-form">
+          <div class="form-group">
+            <label>Etkinlik Başlığı *</label>
+            <input type="text" id="eventTitle" required />
+          </div>
+
+          <div class="form-group">
+            <label>Kategori *</label>
+            <select id="eventCategory">
+              <option value="akademik">Akademik</option>
+              <option value="sosyal">Sosyal</option>
+              <option value="kariyer">Kariyer</option>
+              <option value="spor">Spor</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tarih *</label>
+              <input type="date" id="eventDate" required />
             </div>
-            <p class="text-gray-600 text-sm mb-4">
-              Ünlü sanatçıların katılımıyla düzenlenecek açık hava konseri.
-            </p>
-
-            <div class="grid grid-cols-2 gap-2 text-sm text-gray-700 mb-4">
-              <div>
-                <i class="fa-regular fa-calendar text-purple-600 mr-2"></i>
-                20.12.2024
-              </div>
-              <div>
-                <i class="fa-regular fa-clock text-purple-600 mr-2"></i> 18:00
-              </div>
-              <div class="col-span-2">
-                <i class="fa-solid fa-location-dot text-purple-600 mr-2"></i>
-                Kampüs Açık Hava Alanı
-              </div>
+            <div class="form-group">
+              <label>Saat *</label>
+              <input type="time" id="eventTime" required />
             </div>
+          </div>
 
+          <div class="form-group">
+            <label>Konum *</label>
+            <input type="text" id="eventLocation" required />
+          </div>
+
+          <div class="form-group">
+            <label>Kapasite *</label>
+            <input type="number" id="eventCapacity" min="1" required />
+          </div>
+
+          <div class="form-group">
+            <label>Açıklama</label>
+            <textarea id="eventDescription" rows="4"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Etkinlik Ekle</button>
+        </form>
+      </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="registrationModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Etkinlik Kaydı</h2>
+        <form id="registrationForm">
+          <input type="hidden" id="modalEventId" />
+          <div class="form-group">
+            <label>Ad Soyad *</label>
+            <input type="text" id="studentName" required />
+          </div>
+          <div class="form-group">
+            <label>Öğrenci Numarası *</label>
+            <input type="text" id="studentNumber" required />
+          </div>
+          <div class="form-group">
+            <label>E-posta *</label>
+            <input type="email" id="studentEmail" required />
+          </div>
+          <div class="form-group">
+            <label>Telefon</label>
+            <input type="tel" id="studentPhone" />
+          </div>
+          <div class="modal-buttons">
+            <button type="submit" class="btn btn-success">Kaydı Onayla</button>
             <button
-              class="w-full bg-gray-100 text-gray-500 py-2 rounded-lg font-medium cursor-not-allowed"
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeModal()"
             >
-              Kontenjan Dolu
+              İptal
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
 
-    <div class="text-center py-6 text-gray-500 text-sm">
-      &copy; 2025 Kocaeli Üniversitesi Yazılım Kulübü
-    </div>
+    <script src="script.js"></script>
   </body>
 </html>
