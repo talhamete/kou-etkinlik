@@ -20,8 +20,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     .getElementById("addEventForm")
     .addEventListener("submit", handleAddEvent);
   document
-    .getElementById("registrationForm")
-    .addEventListener("submit", handleRegistration);
+    .getElementById("addStudentForm")
+    .addEventListener("submit", handleAddStudent);
+
+  if (currentUser.role == 0) {
+    document.getElementById("addEventTab").style.display = "none";
+    document.getElementById("event-add-nav").style.display = "none";
+    document.getElementById("addStudentTab").style.display = "none";
+    document.getElementById("student-add-nav").style.display = "none";
+  }
 });
 
 // Tab değiştirme
@@ -41,6 +48,7 @@ function showTab(tabName) {
     events: "eventsTab",
     myRegistrations: "myRegistrationsTab",
     addEvent: "addEventTab",
+    addStudent: "addStudentTab",
   };
 
   document.getElementById(tabs[tabName]).classList.add("active");
@@ -156,6 +164,40 @@ async function filterEvents() {
     console.error("Filtreleme hatası:", error);
   }
 }
+// öğrenci ekle
+async function handleAddStudent(e) {
+  e.preventDefault();
+
+  const studentData = {
+    name: document.getElementById("studentName").value,
+    studentNo: document.getElementById("studentNo").value,
+    password: document.getElementById("studentPassword").value,
+    phoneNo: document.getElementById("studentPhoneNo").value,
+  };
+
+  try {
+    const response = await fetch(`${API_URL}/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(studentData),
+    });
+
+    if (response.ok) {
+      alert("Öğrenci başarıyla eklendi!");
+      document.getElementById("addStudentForm").reset();
+      loadEvents();
+      showTab("events");
+    } else {
+      const error = await response.json();
+      alert("Hata: " + error.error);
+    }
+  } catch (error) {
+    console.error("Öğrenci eklenirken hata:", error);
+    alert("Öğrenci eklenirken bir hata oluştu!");
+  }
+}
 
 // Yeni etkinlik ekle
 async function handleAddEvent(e) {
@@ -234,47 +276,6 @@ async function registerToEvent(eventId) {
   }
 }
 
-// Modalı kapat
-function closeModal() {
-  document.getElementById("registrationModal").classList.remove("active");
-  document.getElementById("registrationForm").reset();
-}
-
-// Kayıt işlemi
-async function handleRegistration(e) {
-  e.preventDefault();
-
-  const registrationData = {
-    eventId: document.getElementById("modalEventId").value,
-    studentName: document.getElementById("studentName").value,
-    studentNumber: document.getElementById("studentNumber").value,
-    email: document.getElementById("studentEmail").value,
-    phone: document.getElementById("studentPhone").value,
-  };
-
-  try {
-    const response = await fetch(`${API_URL}/registrations`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(registrationData),
-    });
-
-    if (response.ok) {
-      alert("Kayıt başarıyla tamamlandı!");
-      closeModal();
-      loadEvents();
-    } else {
-      const error = await response.json();
-      alert("Hata: " + error.error);
-    }
-  } catch (error) {
-    console.error("Kayıt hatası:", error);
-    alert("Kayıt sırasında bir hata oluştu!");
-  }
-}
-
 // Öğrenci kayıtlarını yükle
 async function loadMyRegistrations() {
   const studentNumber = currentUser.studentNo;
@@ -330,13 +331,13 @@ async function displayMyRegistrations(registrations, events) {
                     </div>
                 </div>
                 <div class="registration-info">
-                    <div><strong>Ad Soyad:</strong> ${
-                      getUserFromId(reg.userId).name
-                    }</div>
+                    <div><strong>Ad Soyad:</strong> ${currentUser.name}</div>
                     <div><strong>Öğrenci No:</strong> ${
-                      getUserFromId(reg.userId).studentNo
+                      currentUser.studentNo
                     }</div>
-                    <div><strong>TelefonNo:</strong> ${currentUser.phone}</div>
+                    <div><strong>Telefon No:</strong> ${
+                      currentUser.phoneNo
+                    }</div>
                     <div><strong>Kayıt Tarihi:</strong> ${formatDate(
                       reg.date
                         ? reg.date.split("T")[0]
@@ -369,6 +370,10 @@ async function getUserFromId(id) {
     console.error("Kullanıcı verisi çekilemedi:", error);
     return null;
   }
+}
+
+function logout() {
+  window.location.href = `/logout`;
 }
 
 // Modal dışına tıklanınca kapat

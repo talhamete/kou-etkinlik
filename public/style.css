@@ -26,8 +26,9 @@ body {
 
 .header-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: left;
   align-items: center;
+  gap: 15px;
 }
 
 .header h1 {
@@ -412,8 +413,14 @@ body {
   cursor: pointer;
   font-weight: 500;
   transition: background 0.3s;
+  margin-left: 450px;
 }
 
 #logoutBtn:hover {
   background-color: #c0392b;
+}
+
+#kou-logo {
+  width: 85px;
+  height: 85px;
 }

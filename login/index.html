@@ -2,35 +2,111 @@
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
-    <title>Giriş</title>
-    <link rel="stylesheet" href="/style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Öğrenci Girişi</title>
+    <link rel="stylesheet" href="style.css" />
+
+    <style>
+      /* Giriş Sayfasına Özel Hizalama */
+      body {
+        /* Mevcut body gradient'ini korur */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .login-card {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 400px;
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .login-header h2 {
+        color: #2a5298; /* Header renginizle uyumlu */
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .login-header p {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .login-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: inline-block;
+      }
+
+      /* Animasyon */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
   </head>
-  <body
-    style="
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    "
-  >
-    <div class="modal-content">
-      <h2>Giriş Yap</h2>
+  <body>
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-icon">🎓</div>
+        <h2>Öğrenci Girişi</h2>
+        <p>Sisteme erişmek için bilgilerinizi giriniz.</p>
+      </div>
 
       <form action="/login" method="POST">
-        <input
-          type="text"
-          name="username"
-          id="username"
-          placeholder="Öğrenci No'"
-          required
-        />
+        <div class="form-group">
+          <label for="username">Öğrenci Numarası</label>
+          <input
+            type="text"
+            name="username"
+            id="username"
+            placeholder="Örn: 240229028"
+            required
+            autocomplete="off"
+          />
+        </div>
 
-        <input type="text" name="password" id="password" placeholder="******" />
+        <div class="form-group">
+          <label for="password">Şifre</label>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="••••••••"
+            required
+          />
+        </div>
 
-        <button type="submit">Giriş Yap</button>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem">
+          Giriş Yap
+        </button>
       </form>
-    </div>
 
-    <script></script>
+      <div
+        style="
+          text-align: center;
+          margin-top: 1.5rem;
+          font-size: 0.9rem;
+          color: #666;
+        "
+      ></div>
+    </div>
   </body>
 </html>

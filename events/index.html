@@ -11,15 +11,11 @@
     <header class="header">
       <div class="container">
         <div class="header-content">
+          <img id="kou-logo" src="/kou-logo.png" alt="" />
           <div>
-            <img src="/kou-logo.png" alt="" />
             <h1>Kocaeli Üniversitesi</h1>
             <p class="subtitle">Kampüs Etkinlik Kayıt Sistemi</p>
           </div>
-          <button id="logoutBtn" class="hidden" onclick="logout()">
-            Çıkış Yap
-          </button>
-          <div class="header-icon">📅</div>
         </div>
       </div>
     </header>
@@ -33,8 +29,22 @@
         <button class="nav-btn" onclick="showTab('myRegistrations')">
           Kayıtlarım
         </button>
-        <button class="nav-btn" onclick="showTab('addEvent')">
+        <button
+          id="event-add-nav"
+          class="nav-btn"
+          onclick="showTab('addEvent')"
+        >
           Etkinlik Ekle
+        </button>
+        <button
+          id="student-add-nav"
+          class="nav-btn"
+          onclick="showTab('addStudent')"
+        >
+          Öğrenci Ekle
+        </button>
+        <button id="logoutBtn" class="hidden" onclick="logout()">
+          Çıkış Yap
         </button>
       </div>
     </nav>
@@ -62,11 +72,6 @@
       <div id="myRegistrationsTab" class="tab-content">
         <h2>Kayıtlarım</h2>
         <div class="student-lookup">
-          <input
-            type="text"
-            id="studentNumberLookup"
-            placeholder="Öğrenci Numaranızı Girin"
-          />
           <button onclick="loadMyRegistrations()">Kayıtlarımı Getir</button>
         </div>
         <div id="myRegistrationsContainer"></div>
@@ -120,44 +125,50 @@
           <button type="submit" class="btn btn-primary">Etkinlik Ekle</button>
         </form>
       </div>
-    </main>
 
-    <!-- Modal -->
-    <div id="registrationModal" class="modal">
-      <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <h2>Etkinlik Kaydı</h2>
-        <form id="registrationForm">
-          <input type="hidden" id="modalEventId" />
+      <!-- Öğrenci Ekle Tab -->
+      <div id="addStudentTab" class="tab-content">
+        <h2>Yeni Öğrenci Ekle</h2>
+        <form id="addStudentForm" class="event-form">
           <div class="form-group">
-            <label>Ad Soyad *</label>
+            <label>Öğrenci Adı Soyadı *</label>
             <input type="text" id="studentName" required />
           </div>
+
           <div class="form-group">
             <label>Öğrenci Numarası *</label>
-            <input type="text" id="studentNumber" required />
+            <input
+              type="text"
+              id="studentNo"
+              maxlength="9"
+              minlength="9"
+              inputmode="numeric"
+              required
+            />
           </div>
+
           <div class="form-group">
-            <label>E-posta *</label>
-            <input type="email" id="studentEmail" required />
+            <label>Öğrenci Şifresi *</label>
+            <input type="text" id="studentPassword" required />
           </div>
+
           <div class="form-group">
-            <label>Telefon</label>
-            <input type="tel" id="studentPhone" />
+            <label>Telefon Numarası *</label>
+            <input
+              type="tel"
+              id="studentPhoneNo"
+              maxlength="11"
+              minlength="11"
+              inputmode="numeric"
+              pattern="0\d{10}"
+              required
+            />
           </div>
-          <div class="modal-buttons">
-            <button type="submit" class="btn btn-success">Kaydı Onayla</button>
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick="closeModal()"
-            >
-              İptal
-            </button>
-          </div>
+
+          <button type="submit" class="btn btn-primary">Öğrenci Ekle</button>
         </form>
       </div>
-    </div>
+    </main>
 
     <script src="/script.js"></script>
   </body>
