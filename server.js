@@ -1,107 +1,154 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
+const sqlite3 = require("sqlite3");
+const { open } = require("sqlite");
+const cookieParser = require("cookie-parser");
 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
 const PORT = 3000;
 
 // Middleware
 app.use(bodyParser.json());
-app.use(express.static("public"));
+//app.use(express.static("public"));
+//app.use(express.static("public", { index: false }));
+app.use(express.static(path.join(__dirname, "public")));
+
+let db;
+
+// Bu fonksiyon sunucu açılınca BİR KEZ çalışır ve tabloları oluşturur
+async function initializeDB() {
+  db = await open({
+    filename: "kou_etkinlik.db", // Bu isimde bir dosya oluşacak
+    driver: sqlite3.Database,
+  });
+
+  console.log("📂 Veritabanı dosyası açıldı.");
+
+  // 1. Etkinlikler Tablosunu Oluştur (Eğer yoksa)
+  await db.exec(`
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            description TEXT,
+            date TEXT,
+            time TEXT,
+            location TEXT,
+            capacity INTEGER,
+            registered INTEGER DEFAULT 0,
+            category TEXT
+        )
+    `);
+
+  // 2. Kayıtlar Tablosunu Oluştur
+  await db.exec(`
+        CREATE TABLE IF NOT EXISTS registrations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            eventId INTEGER,
+            userId TEXT,
+            date TEXT
+        )
+    `);
+
+  await db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            userId INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            role INTEGER,
+            studentNo TEXT,
+            password TEXT,
+            phoneNo TEXT
+        )
+    `);
+
+  db.run(
+    "INSERT INTO users (name,role, studentNo, password,phoneNo) VALUES ('talha',1, 'admin', '1234','123456789')"
+  );
+  db.run(
+    "INSERT INTO users (name,role, studentNo, password,phoneNo) VALUES ('mete',0, '240229028', '5678','987654321')"
+  );
+}
+// Veritabanını başlat
+initializeDB();
 
 // In-memory database (Gerçek projede MongoDB veya PostgreSQL kullanılabilir)
-let events = [
-  {
-    id: 1,
-    title: "Yapay Zeka ve Makine Öğrenmesi Semineri",
-    description:
-      "Endüstri profesyonelleri ile yapay zeka teknolojileri üzerine interaktif seminer",
-    date: "2024-12-15",
-    time: "14:00",
-    location: "Mühendislik Fakültesi Konferans Salonu",
-    capacity: 150,
-    registered: 87,
-    category: "akademik",
-  },
-  {
-    id: 2,
-    title: "Bahar Şenliği Konseri",
-    description: "Ünlü sanatçıların katılımıyla düzenlenecek açık hava konseri",
-    date: "2024-12-20",
-    time: "18:00",
-    location: "Kampüs Açık Hava Alanı",
-    capacity: 500,
-    registered: 324,
-    category: "sosyal",
-  },
-  {
-    id: 3,
-    title: "Girişimcilik ve İnovasyon Atölyesi",
-    description:
-      "Başarılı girişimcilerle networking ve proje geliştirme workshop'u",
-    date: "2024-12-18",
-    time: "10:00",
-    location: "Teknopark Eğitim Merkezi",
-    capacity: 80,
-    registered: 45,
-    category: "kariyer",
-  },
-  {
-    id: 4,
-    title: "Spor Turnuvası - Basketbol",
-    description: "Fakülteler arası basketbol turnuvası",
-    date: "2024-12-22",
-    time: "09:00",
-    location: "Spor Kompleksi",
-    capacity: 200,
-    registered: 156,
-    category: "spor",
-  },
-];
+let events = [];
 
 let registrations = [];
 let nextEventId = 5;
 let nextRegistrationId = 1;
+let currentUser = undefined;
 
 // ==================== API ROUTES ====================
 
 // Tüm etkinlikleri getir
-app.get("/api/events", (req, res) => {
-  res.json(events);
+app.get("/api/events", async (req, res) => {
+  try {
+    const rows = await db.all("SELECT * FROM events ORDER BY date, time");
+    res.json(rows);
+  } catch (error) {
+    console.error("Veritabanından etkinlikleri okuma hatası:", error);
+    res.status(500).json({ error: "Veritabanı hatası" });
+  }
 });
 
 // Belirli bir etkinliği getir
-app.get("/api/events/:id", (req, res) => {
-  const event = events.find((e) => e.id === parseInt(req.params.id));
-  if (!event) {
-    return res.status(404).json({ error: "Etkinlik bulunamadı" });
+app.get("/api/events/:id", async (req, res) => {
+  try {
+    const event = await db.get("SELECT * FROM events WHERE id = ?", [
+      req.params.id,
+    ]);
+    if (!event) return res.status(404).json({ error: "Etkinlik bulunamadı" });
+    res.json(event);
+  } catch (error) {
+    console.error("Etkinlik okuma hatası:", error);
+    res.status(500).json({ error: "Veritabanı hatası" });
   }
-  res.json(event);
 });
 
 // Yeni etkinlik ekle
-app.post("/api/events", (req, res) => {
+app.post("/api/events", async (req, res) => {
   const { title, description, date, time, location, capacity, category } =
     req.body;
 
+  // 1. Basit doğrulama
   if (!title || !date || !time || !location || !capacity) {
-    return res.status(400).json({ error: "Tüm alanları doldurun" });
+    return res
+      .status(400)
+      .json({ error: "Lütfen tüm zorunlu alanları doldurun." });
   }
 
-  const newEvent = {
-    id: nextEventId++,
-    title,
-    description: description || "",
-    date,
-    time,
-    location,
-    capacity: parseInt(capacity),
-    registered: 0,
-    category: category || "akademik",
-  };
+  try {
+    // 2. Veritabanına Ekleme (SQL)
+    // registered başlangıçta 0'dır.
+    const sql = `
+        INSERT INTO events (title, description, date, time, location, capacity, category, registered) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+    `;
 
-  events.push(newEvent);
-  res.status(201).json(newEvent);
+    const result = await db.run(sql, [
+      title,
+      description || "",
+      date,
+      time,
+      location,
+      parseInt(capacity), // Sayıya çevir
+      category || "akademik",
+    ]);
+
+    // 3. Başarılı Cevap Dön
+    res.status(201).json({
+      message: "Etkinlik veritabanına kaydedildi.",
+      id: result.lastID, // Yeni oluşan ID'yi döndür
+    });
+  } catch (error) {
+    console.error("Veritabanı yazma hatası:", error);
+    res.status(500).json({ error: "Sunucu hatası: Etkinlik kaydedilemedi." });
+  }
 });
 
 // Etkinliği güncelle
@@ -142,61 +189,78 @@ app.delete("/api/events/:id", (req, res) => {
 });
 
 // Etkinliğe kayıt ol
-app.post("/api/registrations", (req, res) => {
-  const { eventId, studentName, studentNumber, email, phone } = req.body;
+app.post("/api/registrations", async (req, res) => {
+  const { eventId, userId, date } = req.body;
 
-  if (!eventId || !studentName || !studentNumber || !email) {
-    return res.status(400).json({ error: "Gerekli alanları doldurun" });
+  // 1. Cookie'den kullanıcıyı doğrula (Güvenlik)
+  const cookieData = req.cookies.user ? JSON.parse(req.cookies.user) : null;
+  if (!cookieData) {
+    return res.status(401).json({ error: "Giriş yapmalısınız" });
   }
 
-  const event = events.find((e) => e.id === parseInt(eventId));
+  try {
+    // 2. Etkinlik var mı ve kontenjan dolu mu?
+    const event = await db.get("SELECT * FROM events WHERE id = ?", eventId);
 
-  if (!event) {
-    return res.status(404).json({ error: "Etkinlik bulunamadı" });
+    if (!event) {
+      return res.status(404).json({ error: "Etkinlik bulunamadı" });
+    }
+    if (event.registered >= event.capacity) {
+      return res.status(400).json({ error: "Etkinlik kontenjanı dolu" });
+    }
+
+    // 3. Zaten kayıtlı mı?
+    const existing = await db.get(
+      "SELECT * FROM registrations WHERE eventId = ? AND userId = ?",
+      [eventId, cookieData.studentNo]
+    );
+
+    if (existing) {
+      return res.status(400).json({ error: "Bu etkinliğe zaten kayıtlısınız" });
+    }
+
+    // 4. KAYIT İŞLEMİ (Veritabanına Ekle)
+    const result = await db.run(
+      "INSERT INTO registrations (eventId, userId, date) VALUES (?, ?, ?)",
+      [eventId, cookieData.studentNo, new Date().toISOString()]
+    );
+
+    // 5. Etkinliğin sayacını artır
+    await db.run(
+      "UPDATE events SET registered = registered + 1 WHERE id = ?",
+      eventId
+    );
+
+    res.status(201).json({ message: "Kayıt başarılı", id: result.lastID });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Veritabanı hatası" });
   }
-
-  if (event.registered >= event.capacity) {
-    return res.status(400).json({ error: "Etkinlik kontenjanı dolu" });
-  }
-
-  // Aynı öğrenci aynı etkinliğe birden fazla kayıt olamaz
-  const existingRegistration = registrations.find(
-    (r) => r.eventId === parseInt(eventId) && r.studentNumber === studentNumber
-  );
-
-  if (existingRegistration) {
-    return res.status(400).json({ error: "Bu etkinliğe zaten kayıtlısınız" });
-  }
-
-  const newRegistration = {
-    id: nextRegistrationId++,
-    eventId: parseInt(eventId),
-    studentName,
-    studentNumber,
-    email,
-    phone: phone || "",
-    registeredAt: new Date().toISOString(),
-  };
-
-  registrations.push(newRegistration);
-
-  // Etkinliğin kayıtlı kişi sayısını artır
-  event.registered++;
-
-  res.status(201).json(newRegistration);
 });
 
 // Tüm kayıtları getir
-app.get("/api/registrations", (req, res) => {
-  res.json(registrations);
+// Tüm kayıtları getir (SQLite)
+app.get("/api/registrations", async (req, res) => {
+  try {
+    const rows = await db.all("SELECT * FROM registrations");
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Öğrenci numarasına göre kayıtları getir
-app.get("/api/registrations/student/:studentNumber", (req, res) => {
-  const studentRegistrations = registrations.filter(
-    (r) => r.studentNumber === req.params.studentNumber
-  );
-  res.json(studentRegistrations);
+app.get("/api/registrations/student/:studentNumber", async (req, res) => {
+  try {
+    const rows = await db.all(
+      "SELECT * FROM registrations WHERE userId = ? ORDER BY date DESC",
+      [req.params.studentNumber]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error("Kayıtları okuma hatası:", error);
+    res.status(500).json({ error: "Veritabanı hatası" });
+  }
 });
 
 // Etkinliğe göre kayıtları getir
@@ -228,9 +292,78 @@ app.delete("/api/registrations/:id", (req, res) => {
   res.json({ message: "Kayıt iptal edildi" });
 });
 
+//login
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  currentUser = await db.get(
+    "SELECT * FROM users WHERE studentNo = ? AND password = ?",
+    [username, password]
+  );
+
+  console.log(currentUser);
+  if (currentUser) {
+    const userCookie = {
+      studentNo: currentUser.studentNo,
+      role: currentUser.role,
+      phoneNo: currentUser.phoneNo,
+    };
+
+    // 2. Bu paketi STRING (Yazı) haline getirip Cookie'ye basıyoruz
+    // JSON.stringify() -> Objeyi yazıya çevirir.
+    res.cookie("user", JSON.stringify(userCookie), { maxAge: 3600000 }); // 1 saatlik
+  }
+  res.redirect("/");
+});
+
+app.get("/events", (req, res) => {
+  res.sendFile(path.join(__dirname, "events", "index.html"));
+});
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "login", "index.html"));
+});
+app.get("/logout", (req, res) => {
+  res.clearCookie("user");
+  res.redirect("/");
+});
+
 // Ana sayfa
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  const cookieData = req.cookies.user;
+  if (cookieData) {
+    // Cookie verisi string gelir, onu tekrar objeye çevireli
+
+    // İstersek role göre farklı dosya gönderebiliriz
+    // Şimdilik herkesi index.html'e atıyoruz
+    res.redirect("/events");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.get("/api/currentUser", (req, res) => {
+  res.json(currentUser);
+});
+
+app.get("/api/users/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    // Hem ID'ye hem de Öğrenci Numarasına bakıyoruz, hangisi tutarsa.
+    // Şifreyi (password) güvenlik gereği çekmiyoruz!
+    const user = await db.get(
+      "SELECT name, studentNo, role, phoneNo FROM users WHERE userId = ?",
+      [id]
+    );
+
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ error: "Kullanıcı bulunamadı" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Veritabanı hatası" });
+  }
 });
 
 // Server başlat

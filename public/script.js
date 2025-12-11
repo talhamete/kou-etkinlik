@@ -1,9 +1,20 @@
-const API_URL = "http://localhost:3000/api";
-
+const API_URL = "/api";
+let currentUser = undefined;
 // Sayfa yüklendiğinde
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Önce etkinlikleri yükle
   loadEvents();
 
+  // Sonra kullanıcıyı çek (currentUser değişkenini doldur)
+  try {
+    const response = await fetch(`${API_URL}/currentUser`);
+    if (response.ok) {
+      currentUser = await response.json();
+      console.log("Aktif Kullanıcı:", currentUser); // Konsoldan kontrol et
+    }
+  } catch (err) {
+    console.log("Kullanıcı oturumu yok.");
+  }
   // Form submit handlers
   document
     .getElementById("addEventForm")
@@ -56,6 +67,7 @@ async function loadEvents() {
 
 // Etkinlikleri göster
 function displayEvents(events) {
+  console.log("displayevent");
   const container = document.getElementById("eventsContainer");
 
   if (events.length === 0) {
@@ -90,7 +102,7 @@ function displayEvents(events) {
             </div>
             <button 
                 class="btn btn-primary" 
-                onclick="openRegistrationModal(${event.id})"
+                onclick="registerToEvent(${event.id})"
                 ${event.registered >= event.capacity ? "disabled" : ""}
             >
                 ${
@@ -183,10 +195,43 @@ async function handleAddEvent(e) {
   }
 }
 
-// Kayıt modalını aç
-function openRegistrationModal(eventId) {
-  document.getElementById("modalEventId").value = eventId;
-  document.getElementById("registrationModal").classList.add("active");
+// currentUser'ı event'e kayıt et
+async function registerToEvent(eventId) {
+  // Kullanıcı kontrolü
+  if (!currentUser) {
+    alert("Lütfen önce giriş yapın!");
+    window.location.href = "/login";
+    return;
+  }
+
+  const registrationData = {
+    eventId: eventId,
+    // currentUser yapısı db'den nasıl geliyorsa öyle almalısın.
+    // Server.js'deki /api/currentUser rotası ne dönüyorsa o.
+    userId: currentUser.studentNo,
+    date: Date.now(),
+  };
+
+  try {
+    const response = await fetch(`${API_URL}/registrations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(registrationData),
+    });
+
+    if (response.ok) {
+      alert("Kayıt başarıyla tamamlandı!");
+      loadEvents(); // Butonların durumunu güncelle (Kontenjan vb.)
+    } else {
+      const error = await response.json();
+      alert("Hata: " + error.error);
+    }
+  } catch (error) {
+    console.error("Kayıt hatası:", error);
+    alert("Kayıt sırasında bir hata oluştu!");
+  }
 }
 
 // Modalı kapat
@@ -232,9 +277,7 @@ async function handleRegistration(e) {
 
 // Öğrenci kayıtlarını yükle
 async function loadMyRegistrations() {
-  const studentNumber = document
-    .getElementById("studentNumberLookup")
-    .value.trim();
+  const studentNumber = currentUser.studentNo;
 
   if (!studentNumber) {
     alert("Lütfen öğrenci numaranızı girin!");
@@ -242,14 +285,15 @@ async function loadMyRegistrations() {
   }
 
   try {
-    const [regsResponse, eventsResponse] = await Promise.all([
-      fetch(`${API_URL}/registrations/student/${studentNumber}`),
-      fetch(`${API_URL}/events`),
-    ]);
-
+    console.log("sa");
+    const regsResponse = await fetch(
+      `${API_URL}/registrations/student/${studentNumber}`
+    );
+    const eventsResponse = await fetch(`${API_URL}/events`);
+    console.log(regsResponse);
     const registrations = await regsResponse.json();
     const events = await eventsResponse.json();
-
+    console.log(registrations);
     displayMyRegistrations(registrations, events);
   } catch (error) {
     console.error("Kayıtlar yüklenemedi:", error);
@@ -258,7 +302,7 @@ async function loadMyRegistrations() {
 }
 
 // Kayıtları göster
-function displayMyRegistrations(registrations, events) {
+async function displayMyRegistrations(registrations, events) {
   const container = document.getElementById("myRegistrationsContainer");
 
   if (registrations.length === 0) {
@@ -286,11 +330,17 @@ function displayMyRegistrations(registrations, events) {
                     </div>
                 </div>
                 <div class="registration-info">
-                    <div><strong>Ad Soyad:</strong> ${reg.studentName}</div>
-                    <div><strong>Öğrenci No:</strong> ${reg.studentNumber}</div>
-                    <div><strong>E-posta:</strong> ${reg.email}</div>
+                    <div><strong>Ad Soyad:</strong> ${
+                      getUserFromId(reg.userId).name
+                    }</div>
+                    <div><strong>Öğrenci No:</strong> ${
+                      getUserFromId(reg.userId).studentNo
+                    }</div>
+                    <div><strong>TelefonNo:</strong> ${currentUser.phone}</div>
                     <div><strong>Kayıt Tarihi:</strong> ${formatDate(
-                      reg.registeredAt.split("T")[0]
+                      reg.date
+                        ? reg.date.split("T")[0]
+                        : new Date().toISOString()
                     )}</div>
                     <div><strong>Etkinlik Tarihi:</strong> ${formatDate(
                       event.date
@@ -302,6 +352,23 @@ function displayMyRegistrations(registrations, events) {
         `;
     })
     .join("");
+}
+async function getUserFromId(id) {
+  if (!userId) return null;
+
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}`);
+    if (response.ok) {
+      const user = await response.json();
+      return user; // { name: "Ahmet", studentNo: "..." } döner
+    } else {
+      console.warn("Kullanıcı bulunamadı:", userId);
+      return null;
+    }
+  } catch (error) {
+    console.error("Kullanıcı verisi çekilemedi:", error);
+    return null;
+  }
 }
 
 // Modal dışına tıklanınca kapat
