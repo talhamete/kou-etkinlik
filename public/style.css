@@ -16,7 +16,7 @@ body {
   padding: 0 20px;
 }
 
-/* Header */
+/* Üst bölüm */
 .header {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
@@ -45,7 +45,7 @@ body {
   font-size: 3rem;
 }
 
-/* Navigation */
+/* Menü */
 .nav {
   background: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -75,7 +75,7 @@ body {
   border-bottom-color: #2a5298;
 }
 
-/* Main Content */
+/* İçerik */
 .main-content {
   padding: 2rem 0;
 }
@@ -109,7 +109,7 @@ body {
   background: white;
 }
 
-/* Events Grid */
+/* Etkinlikler */
 .events-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -241,7 +241,7 @@ body {
   cursor: not-allowed;
 }
 
-/* Forms */
+/* Formlar */
 .event-form,
 .student-lookup {
   background: white;

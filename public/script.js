@@ -1,21 +1,21 @@
 const API_URL = "/api";
 let currentUser = undefined;
-// Sayfa yüklendiğinde
+// sayfa açılınca çalışacak
 document.addEventListener("DOMContentLoaded", async () => {
-  // Önce etkinlikleri yükle
+  // etkinlikleri çek
   loadEvents();
 
-  // Sonra kullanıcıyı çek (currentUser değişkenini doldur)
+  // kullanıcı bilgisi al
   try {
     const response = await fetch(`${API_URL}/currentUser`);
     if (response.ok) {
       currentUser = await response.json();
-      console.log("Aktif Kullanıcı:", currentUser); // Konsoldan kontrol et
+      console.log("Aktif Kullanıcı:", currentUser);
     }
   } catch (err) {
     console.log("Kullanıcı oturumu yok.");
   }
-  // Form submit handlers
+  // formları dinle
   document
     .getElementById("addEventForm")
     .addEventListener("submit", handleAddEvent);
@@ -31,19 +31,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// Tab değiştirme
+// sekme değiştir
 function showTab(tabName) {
-  // Tüm tabları gizle
+  // önce hepsini gizle
   document.querySelectorAll(".tab-content").forEach((tab) => {
     tab.classList.remove("active");
   });
 
-  // Tüm nav butonlarını pasif yap
+  // butonları pasif yap
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.classList.remove("active");
   });
 
-  // İlgili tabı göster
+  // seçili sekmeyi aç
   const tabs = {
     events: "eventsTab",
     myRegistrations: "myRegistrationsTab",
@@ -53,7 +53,7 @@ function showTab(tabName) {
 
   document.getElementById(tabs[tabName]).classList.add("active");
 
-  // Tıklanan butonu aktif yap
+  // tıklanan butona aktif class ekle
   const buttons = document.querySelectorAll(".nav-btn");
   const tabIndex = Object.keys(tabs).indexOf(tabName);
   if (buttons[tabIndex]) {
@@ -61,7 +61,7 @@ function showTab(tabName) {
   }
 }
 
-// Etkinlikleri yükle
+// etkinlikleri getir
 async function loadEvents() {
   try {
     const response = await fetch(`${API_URL}/events`);
@@ -73,7 +73,7 @@ async function loadEvents() {
   }
 }
 
-// Etkinlikleri göster
+// ekrana yazdır
 function displayEvents(events) {
   console.log("displayevent");
   const container = document.getElementById("eventsContainer");
@@ -125,7 +125,7 @@ function displayEvents(events) {
     .join("");
 }
 
-// Kategori adı
+// kategori ismini döndür
 function getCategoryName(category) {
   const names = {
     akademik: "Akademik",
@@ -136,7 +136,7 @@ function getCategoryName(category) {
   return names[category] || category;
 }
 
-// Tarih formatla
+// tarihi düzenle
 function formatDate(dateStr) {
   const date = new Date(dateStr);
   return date.toLocaleDateString("tr-TR", {
@@ -146,7 +146,7 @@ function formatDate(dateStr) {
   });
 }
 
-// Etkinlik filtrele
+// kategoriye göre filtrele
 async function filterEvents() {
   const category = document.getElementById("categoryFilter").value;
 
@@ -164,7 +164,7 @@ async function filterEvents() {
     console.error("Filtreleme hatası:", error);
   }
 }
-// öğrenci ekle
+// yeni öğrenci kaydet
 async function handleAddStudent(e) {
   e.preventDefault();
 
@@ -199,7 +199,7 @@ async function handleAddStudent(e) {
   }
 }
 
-// Yeni etkinlik ekle
+// etkinlik kaydet
 async function handleAddEvent(e) {
   e.preventDefault();
 
@@ -237,9 +237,9 @@ async function handleAddEvent(e) {
   }
 }
 
-// currentUser'ı event'e kayıt et
+// etkinliğe kaydol
 async function registerToEvent(eventId) {
-  // Kullanıcı kontrolü
+  // giriş yapmış mı kontrol et
   if (!currentUser) {
     alert("Lütfen önce giriş yapın!");
     window.location.href = "/login";
@@ -248,8 +248,6 @@ async function registerToEvent(eventId) {
 
   const registrationData = {
     eventId: eventId,
-    // currentUser yapısı db'den nasıl geliyorsa öyle almalısın.
-    // Server.js'deki /api/currentUser rotası ne dönüyorsa o.
     userId: currentUser.studentNo,
     date: Date.now(),
   };
@@ -265,7 +263,7 @@ async function registerToEvent(eventId) {
 
     if (response.ok) {
       alert("Kayıt başarıyla tamamlandı!");
-      loadEvents(); // Butonların durumunu güncelle (Kontenjan vb.)
+      loadEvents();
     } else {
       const error = await response.json();
       alert("Hata: " + error.error);
@@ -276,7 +274,7 @@ async function registerToEvent(eventId) {
   }
 }
 
-// Öğrenci kayıtlarını yükle
+// öğrencinin kayıtlarını getir
 async function loadMyRegistrations() {
   const studentNumber = currentUser.studentNo;
 
@@ -302,7 +300,7 @@ async function loadMyRegistrations() {
   }
 }
 
-// Kayıtları göster
+// kayıtları listele
 async function displayMyRegistrations(registrations, events) {
   const container = document.getElementById("myRegistrationsContainer");
 
@@ -354,32 +352,7 @@ async function displayMyRegistrations(registrations, events) {
     })
     .join("");
 }
-async function getUserFromId(id) {
-  if (!userId) return null;
-
-  try {
-    const response = await fetch(`${API_URL}/users/${userId}`);
-    if (response.ok) {
-      const user = await response.json();
-      return user; // { name: "Ahmet", studentNo: "..." } döner
-    } else {
-      console.warn("Kullanıcı bulunamadı:", userId);
-      return null;
-    }
-  } catch (error) {
-    console.error("Kullanıcı verisi çekilemedi:", error);
-    return null;
-  }
-}
 
 function logout() {
   window.location.href = `/logout`;
 }
-
-// Modal dışına tıklanınca kapat
-window.onclick = function (event) {
-  const modal = document.getElementById("registrationModal");
-  if (event.target === modal) {
-    closeModal();
-  }
-};

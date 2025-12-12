@@ -15,18 +15,18 @@ app.use(express.static(path.join(__dirname, "public")));
 const PORT = 3000;
 let db;
 
-// ==================== VERİTABANI VE SERVER BAŞLATMA ====================
+// veritabanı ve server başlat
 async function startServer() {
   try {
-    // 1. Veritabanını Aç
+    // db dosyasını aç
     db = await open({
       filename: "kou_etkinlik.db",
       driver: sqlite3.Database,
     });
 
-    console.log("📂 Veritabanı dosyası açıldı.");
+    console.log("Veritabanı dosyası açıldı.");
 
-    // 2. Tabloları Oluştur
+    // tabloları oluştur
     await db.exec(`
             CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,35 +55,30 @@ async function startServer() {
                 userId INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT,
                 role INTEGER,
-                studentNo TEXT UNIQUE, -- Aynı öğrenci no tekrar eklenmesin diye UNIQUE
+                studentNo TEXT UNIQUE,
                 password TEXT,
                 phoneNo TEXT
             )
         `);
 
-    // 3. Varsayılan Kullanıcıları Ekle (Hata vermemesi için try-catch içinde)
-
-    // Sadece yoksa ekle mantığı veya insert or ignore
+    // admin kullanıcısını ekle
     await db.run(
       "INSERT OR IGNORE INTO users (name, role, studentNo, password, phoneNo) VALUES ('talha', 1, 'admin', '1234', '123456789')"
     );
 
-    // 4. VERİTABANI HAZIR OLDUKTAN SONRA SERVER'I BAŞLAT
+    // sunucuyu başlat
     app.listen(PORT, () => {
-      console.log(`🚀 Server çalışıyor: http://localhost:${PORT}`);
-      console.log(`📚 Kocaeli Üniversitesi Etkinlik Sistemi`);
+      console.log(`Server çalışıyor: http://localhost:${PORT}`);
+      console.log(`Kocaeli Üniversitesi Etkinlik Sistemi`);
     });
   } catch (error) {
     console.error("Veritabanı başlatılırken hata oluştu:", error);
   }
 }
 
-// Sistemi Başlat
 startServer();
 
-// ==================== API ROUTES ====================
-
-// Tüm etkinlikleri getir
+// etkinlikleri getir
 app.get("/api/events", async (req, res) => {
   try {
     const rows = await db.all("SELECT * FROM events ORDER BY date, time");
@@ -94,20 +89,7 @@ app.get("/api/events", async (req, res) => {
   }
 });
 
-// Belirli bir etkinliği getir
-app.get("/api/events/:id", async (req, res) => {
-  try {
-    const event = await db.get("SELECT * FROM events WHERE id = ?", [
-      req.params.id,
-    ]);
-    if (!event) return res.status(404).json({ error: "Etkinlik bulunamadı" });
-    res.json(event);
-  } catch (error) {
-    res.status(500).json({ error: "Veritabanı hatası" });
-  }
-});
-
-// Yeni etkinlik ekle
+// etkinlik ekle
 app.post("/api/events", async (req, res) => {
   const { title, description, date, time, location, capacity, category } =
     req.body;
@@ -140,55 +122,7 @@ app.post("/api/events", async (req, res) => {
   }
 });
 
-// Etkinliği güncelle (DÜZELTİLDİ: Artık DB kullanıyor)
-app.put("/api/events/:id", async (req, res) => {
-  const { title, description, date, time, location, capacity, category } =
-    req.body;
-  const id = req.params.id;
-
-  try {
-    // Önce etkinlik var mı bak
-    const event = await db.get("SELECT * FROM events WHERE id = ?", id);
-    if (!event) return res.status(404).json({ error: "Etkinlik bulunamadı" });
-
-    // Güncelle
-    await db.run(
-      `UPDATE events SET title=?, description=?, date=?, time=?, location=?, capacity=?, category=? WHERE id=?`,
-      [
-        title || event.title,
-        description || event.description,
-        date || event.date,
-        time || event.time,
-        location || event.location,
-        capacity ? parseInt(capacity) : event.capacity,
-        category || event.category,
-        id,
-      ]
-    );
-
-    const updatedEvent = await db.get("SELECT * FROM events WHERE id = ?", id);
-    res.json(updatedEvent);
-  } catch (error) {
-    res.status(500).json({ error: "Güncelleme hatası" });
-  }
-});
-
-// Etkinliği sil (DÜZELTİLDİ: Artık DB kullanıyor)
-app.delete("/api/events/:id", async (req, res) => {
-  try {
-    const result = await db.run(
-      "DELETE FROM events WHERE id = ?",
-      req.params.id
-    );
-    if (result.changes === 0)
-      return res.status(404).json({ error: "Etkinlik bulunamadı" });
-    res.json({ message: "Etkinlik silindi" });
-  } catch (error) {
-    res.status(500).json({ error: "Silme hatası" });
-  }
-});
-
-// Etkinliğe kayıt ol
+// kayıt ol
 app.post("/api/registrations", async (req, res) => {
   const { eventId, userId, date } = req.body;
   const cookieData = req.cookies.user ? JSON.parse(req.cookies.user) : null;
@@ -223,17 +157,7 @@ app.post("/api/registrations", async (req, res) => {
   }
 });
 
-// Tüm kayıtları getir
-app.get("/api/registrations", async (req, res) => {
-  try {
-    const rows = await db.all("SELECT * FROM registrations");
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Öğrenci numarasına göre kayıtları getir
+// öğrencinin kayıtları
 app.get("/api/registrations/student/:studentNumber", async (req, res) => {
   try {
     const rows = await db.all(
@@ -246,45 +170,7 @@ app.get("/api/registrations/student/:studentNumber", async (req, res) => {
   }
 });
 
-// Etkinliğe göre kayıtları getir (DÜZELTİLDİ: DB Kullanıyor)
-app.get("/api/registrations/event/:eventId", async (req, res) => {
-  try {
-    const rows = await db.all("SELECT * FROM registrations WHERE eventId = ?", [
-      req.params.eventId,
-    ]);
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ error: "Veritabanı hatası" });
-  }
-});
-
-// Kayıt iptal et (DÜZELTİLDİ: DB Kullanıyor)
-app.delete("/api/registrations/:id", async (req, res) => {
-  try {
-    // Önce kaydı bul ki hangi event olduğunu bilelim
-    const registration = await db.get(
-      "SELECT * FROM registrations WHERE id = ?",
-      req.params.id
-    );
-    if (!registration)
-      return res.status(404).json({ error: "Kayıt bulunamadı" });
-
-    // Kaydı sil
-    await db.run("DELETE FROM registrations WHERE id = ?", req.params.id);
-
-    // Event sayacını düşür
-    await db.run(
-      "UPDATE events SET registered = registered - 1 WHERE id = ?",
-      registration.eventId
-    );
-
-    res.json({ message: "Kayıt iptal edildi" });
-  } catch (error) {
-    res.status(500).json({ error: "İptal hatası" });
-  }
-});
-
-// Login
+// giriş yap
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -303,7 +189,7 @@ app.post("/login", async (req, res) => {
       res.cookie("user", JSON.stringify(userCookie), { maxAge: 3600000 });
       res.redirect("/");
     } else {
-      res.redirect("/login?error=invalid"); // Hatalı giriş yönlendirmesi
+      res.redirect("/login?error=invalid");
     }
   } catch (e) {
     console.error(e);
@@ -336,7 +222,7 @@ app.get("/", (req, res) => {
   }
 });
 
-// Mevcut kullanıcı bilgisi
+// aktif kullanıcı
 app.get("/api/currentUser", (req, res) => {
   if (req.cookies.user) {
     res.json(JSON.parse(req.cookies.user));
@@ -345,30 +231,7 @@ app.get("/api/currentUser", (req, res) => {
   }
 });
 
-app.get("/api/users/:id", async (req, res) => {
-  try {
-    const user = await db.get(
-      "SELECT name, studentNo, role, phoneNo FROM users WHERE userId = ?",
-      [req.params.id]
-    );
-    if (user) res.json(user);
-    else res.status(404).json({ error: "Kullanıcı bulunamadı" });
-  } catch (error) {
-    res.status(500).json({ error: "Veritabanı hatası" });
-  }
-});
-
-app.get("/api/users", async (req, res) => {
-  try {
-    const rows = await db.all("SELECT * FROM users");
-    res.json(rows);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Veritabanı hatası" });
-  }
-});
-
-// Yeni etkinlik ekle
+// öğrenci ekle
 app.post("/api/users", async (req, res) => {
   const { name, studentNo, password, phoneNo } = req.body;
 
